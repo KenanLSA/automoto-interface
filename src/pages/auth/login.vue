@@ -11,6 +11,7 @@ import { useRoute, useRouter } from 'vue-router';
 import * as z from 'zod'
 import { toTypedSchema } from '@vee-validate/zod'
 import { ErrorMessage, Field, Form, useField } from 'vee-validate';
+import Button from '@/components/ui/button/Button.vue';
 
 const route = useRoute()
 const router = useRouter()
@@ -27,22 +28,31 @@ const loginSchema = toTypedSchema(
 )
 
 const invalidCredentials = ref<boolean>(false)
+const loading = ref<boolean>(false)
 
 const handleLogin = async (values: any) => {
     const authStore = useAuthStore()
     const { accessToken } = storeToRefs(authStore)
 
-    const { data } = await api.post('/auth/login', values);
+    try {
+        loading.value = true
+        const { data } = await api.post('/auth/login', values);
 
-    if (!data.accessToken) {
-        invalidCredentials.value = true
-        return
+        if (!data.accessToken) {
+            invalidCredentials.value = true
+            return
+        }
+
+        accessToken.value = data.accessToken
+
+        if (route.query._next) router.replace(String(route.query._next))
+        else router.push('/')
+    } catch (e: any) {
+        console.error(e)
+    } finally {
+        loading.value = false
     }
 
-    accessToken.value = data.accessToken
-
-    if (route.query._next) router.replace(String(route.query._next))
-    else router.push('/')
 }
 </script>
 
@@ -68,7 +78,9 @@ const handleLogin = async (values: any) => {
 
             <p v-if="invalidCredentials">Invalid Credentials</p>
 
-            <button class="w-full" type="submit">Login</button>
+            <Button class="w-full" type="submit" :disabled="loading">
+                Login
+            </Button>
         </Form>
     </div>
 </template>
