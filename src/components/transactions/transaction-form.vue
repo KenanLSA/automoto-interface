@@ -108,6 +108,8 @@ const validateForm = (): boolean => {
     return isValid
 }
 
+const saving = ref<boolean>(false)
+
 const handleSave = async () => {
     const isValid = validateForm()
 
@@ -115,9 +117,19 @@ const handleSave = async () => {
 
     generatePayload()
 
-    await api.post('/transactions', payload.value)
-    emits('refresh')
-    initializeForm()
+    try {
+        saving.value = true
+        await api.post('/transactions', payload.value)
+        emits('refresh')
+        initializeForm()
+        open.value = false
+        loadProducts()
+    } catch (e: any) {
+
+    } finally {
+        saving.value = false
+    }
+
 }
 
 // Transaction items
@@ -197,8 +209,8 @@ watch(open, (state) => {
             </form>
 
             <DialogFooter>
-                <DialogClose as-child><Button variant="outline">Cancel</Button></DialogClose>
-                <Button type="submit" @click="handleSave">Save</Button>
+                <DialogClose as-child><Button variant="outline" :disabled="saving">Cancel</Button></DialogClose>
+                <Button type="submit" @click="handleSave" :disabled="saving">Save</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
