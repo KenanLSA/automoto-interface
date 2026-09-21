@@ -21,6 +21,10 @@
   input {
     @apply border border-gray-300 px-2.5 py-1.5 rounded-md;
   }
+
+  button[data-variant='outline'] {
+    @apply bg-gray-100 border-none text-gray-600 hover:bg-gray-200 active:bg-gray-300;
+  }
 }
 
 @layer utilities {
