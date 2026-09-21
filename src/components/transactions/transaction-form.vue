@@ -28,15 +28,18 @@ const transactionForm = reactive<{
         itemId: number,
         quantity: number,
         errorMessage: string[]
-    }[]
+    }[],
+    errorMessages: string[]
 }>({
     customerName: '',
-    transactionItems: []
+    transactionItems: [],
+    errorMessages: []
 })
 
 const initializeForm = () => {
     transactionForm.customerName = '';
     transactionForm.transactionItems = []
+    transactionForm.errorMessages = []
 }
 
 const products = ref<Product[]>([])
@@ -75,14 +78,20 @@ onMounted(loadProducts)
 
 const validateForm = (): boolean => {
     let isValid: boolean = true
+    transactionForm.errorMessages = []
+
+    if (transactionForm.transactionItems.length === 0) {
+        transactionForm.errorMessages.push('No product selected')
+        isValid = false
+    }
+
+    if (transactionForm.customerName.length === 0) {
+        transactionForm.errorMessages.push('The Customer Name field cannot be empty')
+        isValid = false
+    }
 
     for (let item of transactionForm.transactionItems) {
         item.errorMessage = []
-
-        if (item.itemId === 0) {
-            item.errorMessage.push('No product selected')
-            continue
-        }
 
         const product = products.value.find(p => p.id === item.itemId)
 
@@ -141,14 +150,21 @@ watch(open, (state) => {
             <DialogHeader>
                 <DialogTitle>Add a new Transaction</DialogTitle>
             </DialogHeader>
-            <form class="space-y-6" @submit.prevent="handleSave">
+            <form class="w-full space-y-6" @submit.prevent>
                 <div class="form-group">
                     <Label>Customer Name</Label>
                     <Input v-model="transactionForm.customerName" name="customerName" placeholder="e.g. John Doe" />
+
+                    <ul class="pl-8 text-sm list-disc">
+                        <li v-for="error in transactionForm.errorMessages" :key="error" class="text-red-400">
+                            {{ error }}
+                        </li>
+                    </ul>
                 </div>
 
                 <template v-for="(item, idx) in transactionForm.transactionItems" :key="item.itemId">
-                    <div class="w-full flex flex-col gap-2">
+                    <Label>Products</Label>
+                    <div class="flex flex-col gap-2">
                         <Select v-model:model-value="transactionForm.transactionItems[idx]!.itemId">
                             <SelectTrigger class="border-gray-300">
                                 <SelectValue placeholder="Select a product" />
@@ -163,21 +179,18 @@ watch(open, (state) => {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-
-                        <div class="flex gap-2">
-                            <input type="number" class="flex-1"
-                                v-model="transactionForm.transactionItems[idx]!.quantity" />
+                        <div class="flex gap-2 items-center">
+                            <Input type="number" v-model="transactionForm.transactionItems[idx]!.quantity" />
                             <Button type="button" @click="remove(idx)">Remove</Button>
                         </div>
                     </div>
 
-                    <ul>
+                    <ul class="pl-8 text-sm list-disc">
                         <li v-for="(message, idx2) in transactionForm.transactionItems[idx]!.errorMessage"
-                            :key="`${message}-${idx}-${idx2}`">
+                            :key="`${message}-${idx}-${idx2}`" class="text-red-400">
                             {{ message }}
                         </li>
                     </ul>
-
                 </template>
 
                 <Button variant="outline" type="button" @click="addItem">Add Item</Button>
@@ -185,7 +198,7 @@ watch(open, (state) => {
 
             <DialogFooter>
                 <DialogClose as-child><Button variant="outline">Cancel</Button></DialogClose>
-                <Button type="submit">Save</Button>
+                <Button type="submit" @click="handleSave">Save</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
